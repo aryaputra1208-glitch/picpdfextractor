@@ -3,534 +3,875 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Validasi Beasiswa - Anteraja</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Cek Dokumen Kurir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+/* Layout: sticky header; left rail = input steps (kandidat, dokumen, syarat); right = summary bar + candidate ledger with expandable rows */
 :root{
-  --pink:#E8197C;--pink-light:#FCE4F1;--pink-dark:#B5125E;
-  --green:#16A34A;--green-bg:#DCFCE7;
-  --amber:#D97706;--amber-bg:#FEF3C7;
-  --red:#DC2626;--red-bg:#FEE2E2;
-  --blue:#2563EB;--blue-bg:#DBEAFE;
-  --bg:#F5F6F7;--white:#FFFFFF;
-  --text:#111827;--muted:#6B7280;--border:#E5E7EB;--border2:#D1D5DB;
-  --sans:'Inter',sans-serif;
-  --sh:0 1px 3px rgba(0,0,0,.07);
+  --bg:#F6F4F7; --surface:#FFFFFF; --sunk:#EFEBF1; --ink:#1E1721; --muted:#6C6271; --line:#E3DDE6;
+  --brand:#E8197C; --brand-ink:#B3105D; --brand-soft:#FCE6F1;
+  --ok:#0F7A57; --ok-soft:#E1F4EC; --warn:#A86300; --warn-soft:#FBF0DC; --bad:#C2293A; --bad-soft:#FBE4E6; --none:#8E8493; --none-soft:#EFEBF1;
+  --f-display:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:10px;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
-.nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;height:54px;gap:12px;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
-.ndiv{width:1px;height:18px;background:var(--border)}
-.ntitle{font-size:12px;color:var(--muted);font-weight:500}
-.wrap{max-width:920px;margin:0 auto;padding:1.5rem;display:flex;flex-direction:column;gap:1rem}
-.step{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.25rem;box-shadow:var(--sh)}
-.step-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
-.step-num{width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.step-num.done{background:var(--green)}.step-num.inactive{background:var(--border2);color:var(--muted)}
-.step-title{font-size:14px;font-weight:600}.step-sub{font-size:12px;color:var(--muted);margin-top:1px}
-.tbar{display:flex;align-items:center;justify-content:space-between;background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:.875rem}
-.tbar p{font-size:12px;color:var(--blue);font-weight:500}.tbar span{font-size:11px;color:var(--blue);opacity:.8}
-.dz{border:1.5px dashed var(--border2);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--bg)}
-.dz:hover,.dz.drag{border-color:var(--pink);background:var(--pink-light)}
-.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.dz-icon{font-size:24px;margin-bottom:6px;opacity:.6}.dz-lbl{font-size:12px;font-weight:600;margin-bottom:2px}.dz-sub{font-size:11px;color:var(--muted)}
-.dz.loaded{border-color:var(--green);background:var(--green-bg)}
-.pw{max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:.75rem}
-.ptbl{width:100%;border-collapse:collapse;font-size:12px}
-.ptbl th{background:var(--bg);padding:7px 10px;text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase}
-.ptbl td{padding:7px 10px;border-bottom:1px solid var(--border)}
-.ptbl tr:last-child td{border-bottom:none}
-.queue{display:flex;flex-direction:column;gap:4px;margin-top:.75rem;max-height:160px;overflow-y:auto}
-.qi{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px}
-.qn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
-.qs{color:var(--muted);font-size:11px;min-width:48px;text-align:right}
-.pill{display:inline-flex;font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;white-space:nowrap}
-.pp{background:#F3F4F6;color:var(--muted)}.ppr{background:var(--blue-bg);color:var(--blue)}
-.pk{background:var(--pink-light);color:var(--pink)}.pr{background:var(--green-bg);color:var(--green)}.pe{background:var(--red-bg);color:var(--red)}
-.pgwrap{display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:.75rem}
-.pgtop{display:flex;justify-content:space-between;font-size:12px;font-weight:500;margin-bottom:6px}
-.pgtrack{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
-.pgfill{height:100%;background:var(--pink);border-radius:99px;transition:width .4s ease;width:0%}
-.pgsub{font-size:11px;color:var(--muted);margin-top:5px}
-.log{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:monospace;font-size:11px;color:var(--muted);max-height:100px;overflow-y:auto;display:none;margin-top:.75rem;line-height:1.7}
-.lok{color:var(--green)}.lin{color:var(--blue)}.lw{color:var(--amber)}.le{color:var(--red)}.lts{color:#D1D5DB}
-.abar{display:flex;gap:8px;align-items:center;margin-top:1rem}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:all .15s}
-.btn-pink{background:var(--pink);color:#fff}.btn-pink:hover{background:var(--pink-dark)}
-.btn-pink:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
-.btn-ol{background:var(--white);border:1.5px solid var(--border2);color:var(--text)}.btn-ol:hover{border-color:var(--pink);color:var(--pink)}
-.btn-gr{background:var(--green);color:#fff}.btn-gr:hover{background:#15803D}
-.btn-bl{background:var(--blue);color:#fff}.btn-bl:hover{background:#1D4ED8}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
-.rstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem}
-.rs{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
-.rsl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.rsv{font-size:20px;font-weight:700;margin-top:3px}
-.rvt{color:var(--blue)}.rvv{color:var(--green)}.rvi{color:var(--red)}.rvp{color:var(--amber)}
-.rtwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--white)}
-.rtbl{width:100%;border-collapse:collapse;font-size:12px}
-.rtbl th{background:var(--bg);padding:9px 12px;text-align:left;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px;text-transform:uppercase}
-.rtbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
-.rtbl tr:last-child td{border-bottom:none}
-.rtbl tr:hover td{background:#FAFAFA}
-.sv{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600}
-.svv{background:var(--green-bg);color:var(--green)}.svi{background:var(--red-bg);color:var(--red)}.svp{background:var(--amber-bg);color:var(--amber)}
-.nc{font-size:11px;color:var(--muted);max-width:220px;line-height:1.5}
-.sbar{display:flex;align-items:center;gap:8px;background:var(--green-bg);border:1px solid #86EFAC;border-radius:8px;padding:8px 12px;margin-top:.75rem;font-size:12px}
-.sdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.pulse{animation:pulse 1s ease infinite}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#131015; --surface:#1C181F; --sunk:#241F28; --ink:#F1ECF3; --muted:#A99FAE; --line:#332C37;
+  --brand:#FF4FA0; --brand-ink:#FF7DB8; --brand-soft:#3A1A2B;
+  --ok:#3CC594; --ok-soft:#14302A; --warn:#F0AA45; --warn-soft:#352914; --bad:#FF6D7A; --bad-soft:#3A1A20; --none:#8F8594; --none-soft:#241F28;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#131015; --surface:#1C181F; --sunk:#241F28; --ink:#F1ECF3; --muted:#A99FAE; --line:#332C37;
+  --brand:#FF4FA0; --brand-ink:#FF7DB8; --brand-soft:#3A1A2B;
+  --ok:#3CC594; --ok-soft:#14302A; --warn:#F0AA45; --warn-soft:#352914; --bad:#FF6D7A; --bad-soft:#3A1A20; --none:#8F8594; --none-soft:#241F28;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* Header */
+.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:14px;height:60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top img{height:30px;width:auto;display:block}
+.top .sep{width:1px;height:22px;background:var(--line)}
+.top h1{font-family:var(--f-display);font-size:16px;font-weight:700;margin:0;letter-spacing:-.01em}
+.top .sub{color:var(--muted);font-size:12px}
+.top .grow{flex:1}
+.model-pill{font-family:var(--f-mono);font-size:11px;padding:4px 9px;border-radius:99px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;height:34px;padding:0 12px;cursor:pointer;font-weight:600;font-size:12px}
+.icon-btn:hover{border-color:var(--brand);color:var(--brand)}
+
+/* Shell */
+.shell{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:360px minmax(0,1fr);gap:20px;align-items:start;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}}
+.rail{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.panel-h{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.step{font-family:var(--f-mono);font-size:11px;color:var(--brand);font-weight:500}
+.panel-h h2{font-family:var(--f-display);font-size:14px;font-weight:700;margin:0}
+.panel-h .opt{margin-left:auto;font-size:11px;color:var(--muted)}
+.hint{color:var(--muted);font-size:12px;margin:0 0 10px}
+
+.drop{position:relative;border:1.5px dashed var(--line);border-radius:8px;padding:18px 14px;text-align:center;background:var(--sunk);transition:border-color .15s,background .15s;cursor:pointer}
+.drop:hover,.drop.drag{border-color:var(--brand);background:var(--brand-soft)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop b{display:block;font-weight:600;font-size:13px}
+.drop span{font-size:11px;color:var(--muted)}
+.drop.done{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+
+.linkbtn{background:none;border:0;padding:0;color:var(--brand-ink);font-weight:600;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.row-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap}
+.count{font-size:12px;color:var(--muted)}
+.count strong{color:var(--ink);font-variant-numeric:tabular-nums}
+
+.queue{list-style:none;margin:10px 0 0;padding:0;max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.queue li{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 8px;border-radius:6px;background:var(--sunk);min-width:0}
+.queue .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue .rm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.tag{font-family:var(--f-mono);font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px;background:var(--surface);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.tag.run{color:var(--brand-ink);border-color:var(--brand)}
+.tag.ok{color:var(--ok);border-color:var(--ok)}
+.tag.err{color:var(--bad);border-color:var(--bad)}
+
+.reqs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;cursor:pointer}
+.chk input{accent-color:var(--brand)}
+.fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;letter-spacing:.02em}
+.field input,.field select{width:100%;height:34px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:0 8px;font-size:13px}
+
+.go{width:100%;height:44px;border:0;border-radius:9px;background:var(--brand);color:#fff;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.01em}
+.go:hover{background:var(--brand-ink)}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.progress{margin-top:10px}
+.bar{height:4px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .3s}
+.progress p{font-size:12px;color:var(--muted);margin:6px 0 0;font-variant-numeric:tabular-nums}
+
+/* Results */
+.main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;border-top:3px solid var(--c)}
+.sum.on{background:var(--c-soft)}
+.sum span{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.sum b{font-family:var(--f-display);font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--c)}
+.s-ok{--c:var(--ok);--c-soft:var(--ok-soft)} .s-warn{--c:var(--warn);--c-soft:var(--warn-soft)} .s-bad{--c:var(--bad);--c-soft:var(--bad-soft)} .s-none{--c:var(--none);--c-soft:var(--none-soft)}
+
+.ledger{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.ledger-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ledger-h h2{font-family:var(--f-display);font-size:15px;font-weight:700;margin:0}
+.ledger-h .grow{flex:1}
+.search{height:34px;border:1px solid var(--line);border-radius:7px;padding:0 10px;background:var(--surface);min-width:0;width:200px;max-width:100%}
+.btn{height:34px;border-radius:7px;padding:0 12px;font-weight:600;font-size:12px;cursor:pointer;border:1px solid var(--line);background:var(--surface)}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--sunk)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.cand{cursor:pointer}
+tr.cand:hover td{background:var(--sunk)}
+tr.cand td:first-child{border-left:3px solid var(--c)}
+.nm{font-weight:600}
+.nik{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.02em;white-space:nowrap}
+.pos{font-size:12px;color:var(--muted)}
+.slot{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font-weight:700;font-size:13px;background:var(--c-soft);color:var(--c)}
+.st{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--c-soft);color:var(--c);white-space:nowrap}
+.notes{font-size:12px;color:var(--muted);max-width:340px}
+.notes div+div{margin-top:2px}
+tr.detail td{background:var(--sunk);padding:14px}
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0;border-top:3px solid var(--c)}
+.doc h4{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;gap:8px}
+.doc .src{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px}
+.doc dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:0;font-size:12px}
+.doc dt{color:var(--muted)}
+.doc dd{margin:0;overflow-wrap:anywhere}
+.doc ul{margin:8px 0 0;padding-left:16px;font-size:12px}
+.doc li{color:var(--c)}
+.conf{font-family:var(--f-mono);font-size:10px;color:var(--muted);font-weight:400}
+
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty h3{font-family:var(--f-display);color:var(--ink);font-size:16px;margin:0 0 6px}
+.empty p{margin:0 auto;max-width:440px;font-size:13px}
+.legend{display:flex;gap:14px;justify-content:center;margin-top:16px;flex-wrap:wrap;font-size:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+.unmatched{padding:12px 14px;border-top:1px solid var(--line);font-size:12px}
+.unmatched b{color:var(--warn)}
+
+.log{font-family:var(--f-mono);font-size:11px;color:var(--muted);max-height:140px;overflow:auto;background:var(--sunk);border-radius:7px;padding:8px 10px;margin-top:10px;white-space:pre-wrap}
+.log .e{color:var(--bad)} .log .w{color:var(--warn)} .log .k{color:var(--ok)}
+
+/* Settings */
+.settings{background:var(--surface);border-bottom:1px solid var(--line)}
+.settings-in{max-width:1320px;margin:0 auto;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+@media (max-width:700px){.settings-in{grid-template-columns:minmax(0,1fr)}}
+.settings .msg{font-size:12px;grid-column:1/-1;margin:0;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<nav class="nav">
-  <img src="data:image/png;base64,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" style="height:32px;width:auto" alt="Anteraja">
-  <div class="ndiv"></div>
-  <span class="ntitle">Validasi Beasiswa Anak Karyawan</span>
-</nav>
-<div class="wrap">
-  <div class="step">
-    <div class="step-head">
-      <div class="step-num" id="sn1">1</div>
-      <div><div class="step-title">Upload list karyawan</div><div class="step-sub">Excel dengan nama karyawan dan jenjang yang diajukan</div></div>
+
+<header class="top">
+  <div class="top-in">
+    <img src="data:image/png;base64,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" alt="Anteraja">
+    <span class="sep"></span>
+    <div>
+      <h1>Cek Dokumen Kurir</h1>
+      <div class="sub">KTP · SIM · SKCK · Ijazah</div>
     </div>
-    <div class="tbar">
-      <div><p>Download template Excel</p><span>Kolom: Nama Karyawan, Jenjang Diajukan</span></div>
-      <button class="btn btn-bl btn-sm" onclick="dlTemplate()">&#11015; Download Template</button>
-    </div>
-    <div class="dz" id="dzK">
-      <input type="file" id="fiK" accept=".xlsx,.xls,.csv">
-      <div class="dz-icon">&#128203;</div>
-      <div class="dz-lbl">Upload list karyawan</div>
-      <div class="dz-sub">Excel atau CSV &mdash; kolom: Nama Karyawan, Jenjang Diajukan</div>
-    </div>
-    <div id="kPrev" style="display:none">
-      <div style="font-size:11px;color:var(--muted);margin-top:.5rem" id="kCnt"></div>
-      <div class="pw"><table class="ptbl"><thead><tr><th>#</th><th>Nama Karyawan</th><th>Jenjang Diajukan</th></tr></thead><tbody id="kBody"></tbody></table></div>
-    </div>
+    <span class="grow"></span>
+    <span class="model-pill" id="modelPill">claude-opus-5-5</span>
+    <button class="icon-btn" id="btnSettings" type="button">Pengaturan</button>
   </div>
-  <div class="step">
-    <div class="step-head">
-      <div class="step-num inactive" id="sn2">2</div>
-      <div><div class="step-title">Upload dokumen KK &amp; Raport</div><div class="step-sub">Bulk upload &mdash; campuran KK dan Raport, auto-detect semua format</div></div>
+</header>
+
+<section class="settings" id="settings" hidden>
+  <div class="settings-in">
+    <div class="field">
+      <label for="cfgWorker">URL Cloudflare Worker</label>
+      <input id="cfgWorker" type="url" placeholder="https://nama-worker.akun.workers.dev/">
     </div>
-    <div class="dz" id="dzD" style="padding:2rem">
-      <input type="file" id="fiD" multiple accept=".pdf,.jpg,.jpeg,.png,.webp">
-      <div class="dz-icon">&#128194;</div>
-      <div class="dz-lbl">Klik atau drag &amp; drop file ke sini</div>
-      <div class="dz-sub">PDF, JPG, PNG, WEBP &mdash; campuran KK &amp; Raport semua jenjang termasuk PAUD/TK</div>
+    <div class="field">
+      <label for="cfgModel">Model Pembaca Dokumen</label>
+      <select id="cfgModel">
+        <option value="claude-opus-5-5">Opus 5.5 · paling akurat</option>
+        <option value="claude-sonnet-5-5">Sonnet 5.5 · lebih cepat &amp; hemat</option>
+        <option value="claude-haiku-5-5">Haiku 5.5 · tercepat, untuk scan rapi</option>
+      </select>
     </div>
-    <div class="queue" id="queue"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="btnTest" type="button">Tes Koneksi</button>
+      <button class="btn primary" id="btnSave" type="button">Simpan</button>
+    </div>
+    <p class="msg" id="cfgMsg">Pengaturan tersimpan di browser ini saja.</p>
   </div>
-  <div class="step">
-    <div class="step-head">
-      <div class="step-num inactive" id="sn3">3</div>
-      <div><div class="step-title">Ekstrak &amp; validasi</div><div class="step-sub">Claude membaca dokumen, mencocokkan nama dengan AI, lalu memvalidasi jenjang</div></div>
+</section>
+
+<div class="shell">
+  <aside class="rail">
+
+    <section class="panel">
+      <div class="panel-h"><span class="step">01</span><h2>Daftar Kandidat</h2><span class="opt">opsional</span></div>
+      <p class="hint">Isi kalau mau dicocokkan ke nama tertentu. Tanpa daftar, kandidat dikelompokkan otomatis dari KTP.</p>
+      <div class="drop" id="dropList">
+        <input type="file" id="fiList" accept=".xlsx,.xls,.csv" aria-label="Upload daftar kandidat">
+        <b id="listLabel">Upload Excel kandidat</b>
+        <span>Kolom: Nama Kandidat · NIK · Posisi</span>
+      </div>
+      <div class="row-actions">
+        <button class="linkbtn" id="btnTemplate" type="button">Download template</button>
+        <button class="linkbtn" id="btnClearList" type="button" hidden>Hapus daftar</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><span class="step">02</span><h2>Dokumen</h2></div>
+      <div class="drop" id="dropDocs">
+        <input type="file" id="fiDocs" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" aria-label="Upload dokumen">
+        <b>Drop semua dokumen sekaligus</b>
+        <span>JPG, PNG, WEBP, PDF · campur semua kandidat, jenis dideteksi otomatis</span>
+      </div>
+      <div class="row-actions">
+        <span class="count"><strong id="docCount">0</strong> file</span>
+        <button class="linkbtn" id="btnClearDocs" type="button" hidden>Kosongkan</button>
+      </div>
+      <ul class="queue" id="queue"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-h"><span class="step">03</span><h2>Syarat</h2></div>
+      <div class="reqs">
+        <label class="chk"><input type="checkbox" id="rqKTP" checked> KTP wajib</label>
+        <label class="chk"><input type="checkbox" id="rqSIM" checked> SIM wajib</label>
+        <label class="chk"><input type="checkbox" id="rqSKCK" checked> SKCK wajib</label>
+        <label class="chk"><input type="checkbox" id="rqIJAZAH" checked> Ijazah wajib</label>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="cfgMinAge">Usia min</label><input id="cfgMinAge" type="number" min="17" max="70" value="18"></div>
+        <div class="field"><label for="cfgMaxAge">Usia maks</label><input id="cfgMaxAge" type="number" min="17" max="70" placeholder="—"></div>
+        <div class="field"><label for="cfgEdu">Pendidikan min</label>
+          <select id="cfgEdu"><option value="1">SD</option><option value="2" selected>SMP</option><option value="3">SMA/SMK</option><option value="4">Diploma</option></select>
+        </div>
+      </div>
+      <p class="hint" style="margin:10px 0 0">SIM wajib golongan C, atau A kalau kolom Posisi berisi "mobil"/"van".</p>
+    </section>
+
+    <section class="panel">
+      <button class="go" id="btnGo" type="button" disabled>Baca &amp; Cek Dokumen</button>
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><i id="barFill"></i></div>
+        <p id="progText">Menyiapkan…</p>
+      </div>
+      <div class="log" id="log" hidden></div>
+    </section>
+  </aside>
+
+  <main class="main">
+    <div class="summary" id="summary">
+      <button class="sum s-ok" data-f="ok" type="button"><span>Lolos</span><b id="nOk">0</b></button>
+      <button class="sum s-warn" data-f="warn" type="button"><span>Perlu Cek</span><b id="nWarn">0</b></button>
+      <button class="sum s-bad" data-f="bad" type="button"><span>Tidak Memenuhi</span><b id="nBad">0</b></button>
+      <button class="sum s-none" data-f="none" type="button"><span>Belum Lengkap</span><b id="nNone">0</b></button>
     </div>
-    <div class="abar">
-      <button class="btn btn-pink" id="btnGo" disabled onclick="startProcess()">&#9889; Mulai Ekstrak &amp; Validasi</button>
-      <button class="btn btn-ol" onclick="resetAll()">&#8635; Reset</button>
-      <span id="rdyNote" style="font-size:12px;color:var(--muted)"></span>
-    </div>
-    <div class="pgwrap" id="pgwrap">
-      <div class="pgtop"><span id="pgl">Memproses...</span><span id="pgp">0%</span></div>
-      <div class="pgtrack"><div class="pgfill" id="pgf"></div></div>
-      <div class="pgsub" id="pgs"></div>
-    </div>
-    <div class="log" id="log"></div>
-  </div>
-  <div class="step" id="resSec" style="display:none">
-    <div class="step-head">
-      <div class="step-num done">4</div>
-      <div><div class="step-title">Hasil validasi</div><div class="step-sub" id="resSub"></div></div>
-      <div style="margin-left:auto"><button class="btn btn-gr btn-sm" onclick="dlResult()">&#11015; Download Excel</button></div>
-    </div>
-    <div id="sbar" class="sbar" style="display:none">
-      <div class="sdot"></div>
-      <span style="color:var(--green);font-weight:500;font-size:12px" id="sbMsg"></span>
-    </div>
-    <div class="rstats">
-      <div class="rs"><div class="rsl">Total</div><div class="rsv rvt" id="rT">0</div></div>
-      <div class="rs"><div class="rsl">Valid</div><div class="rsv rvv" id="rV">0</div></div>
-      <div class="rs"><div class="rsl">Tidak valid</div><div class="rsv rvi" id="rI">0</div></div>
-      <div class="rs"><div class="rsl">Partial</div><div class="rsv rvp" id="rP">0</div></div>
-    </div>
-    <div class="rtwrap">
-      <table class="rtbl">
-        <thead><tr>
-          <th>Nama Karyawan</th><th>Jenjang Diajukan</th>
-          <th>Nama Anak (KK)</th><th>Jenjang KK</th>
-          <th>Nama Siswa (Raport)</th><th>Jenjang Raport</th>
-          <th>Tahun Ajaran</th><th>Status</th><th>Notes</th>
-        </tr></thead>
-        <tbody id="resBody"></tbody>
-      </table>
-    </div>
-  </div>
+
+    <section class="ledger">
+      <div class="ledger-h">
+        <h2>Hasil Per Kandidat</h2>
+        <span class="grow"></span>
+        <input class="search" id="search" type="search" placeholder="Cari nama atau NIK" aria-label="Cari kandidat">
+        <button class="btn primary" id="btnExport" type="button" disabled>Download Excel</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Kandidat</th><th>KTP</th><th>SIM</th><th>SKCK</th><th>Ijazah</th><th>Status</th><th>Catatan</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty">
+        <h3>Belum ada hasil</h3>
+        <p>Upload dokumen kandidat lalu klik Baca &amp; Cek Dokumen. Setiap kandidat muncul satu baris dengan status keempat dokumennya. Klik baris untuk melihat isi yang terbaca.</p>
+        <div class="legend">
+          <span><i class="slot s-ok">✓</i> Sesuai</span>
+          <span><i class="slot s-warn">!</i> Perlu dicek manual</span>
+          <span><i class="slot s-bad">✕</i> Tidak memenuhi</span>
+          <span><i class="slot s-none">–</i> Tidak ada</span>
+        </div>
+      </div>
+      <div class="unmatched" id="unmatched" hidden></div>
+    </section>
+  </main>
 </div>
+
 <script>
-var LS="ant_bsw_v4";
-var cfg={};
-try{cfg=JSON.parse(localStorage.getItem(LS)||"{}")}catch(e){}
-var WORKER=cfg.worker||"";
-var SHEETS=cfg.sheets||"";
-if(!WORKER){WORKER=prompt("Cloudflare Worker URL:","https://culture-extractor.arya-putra1208.workers.dev/")||"";cfg.worker=WORKER;}
-if(!SHEETS){SHEETS=prompt("Google Apps Script URL:","");cfg.sheets=SHEETS;}
-localStorage.setItem(LS,JSON.stringify(cfg));
+(function(){
+"use strict";
 
-var kList=[],docs=[],results=[],busy=false;
+/* ---------- Config ---------- */
+var LS_KEY = "ant_kurir_v1";
+var cfg = { worker: "https://culture-extractor.arya-putra1208.workers.dev/", model: "claude-opus-5-5" };
+try { var saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); Object.assign(cfg, saved); } catch (e) {}
+function saveCfg(){ try { localStorage.setItem(LS_KEY, JSON.stringify(cfg)); } catch (e) {} }
 
-function dlTemplate(){
-  var wb=XLSX.utils.book_new();
-  var ws=XLSX.utils.aoa_to_sheet([["Nama Karyawan","Jenjang Diajukan"],["Andrian","SMP"],["Budi Santoso","SMA"],["Dwi Kurnianto","PAUD/TK"],["Arya Agum Gumelar","SD"]]);
-  ws["!cols"]=[{wch:28},{wch:18}];
-  XLSX.utils.book_append_sheet(wb,ws,"List Karyawan");
-  XLSX.writeFile(wb,"template_list_karyawan.xlsx");
+var $ = function(id){ return document.getElementById(id); };
+$("cfgWorker").value = cfg.worker;
+$("cfgModel").value = cfg.model;
+$("modelPill").textContent = cfg.model;
+
+$("btnSettings").onclick = function(){ $("settings").hidden = !$("settings").hidden; };
+$("btnSave").onclick = function(){
+  cfg.worker = $("cfgWorker").value.trim();
+  cfg.model = $("cfgModel").value;
+  saveCfg();
+  $("modelPill").textContent = cfg.model;
+  $("cfgMsg").textContent = "Tersimpan.";
+};
+$("btnTest").onclick = async function(){
+  cfg.worker = $("cfgWorker").value.trim(); cfg.model = $("cfgModel").value;
+  $("cfgMsg").textContent = "Menghubungi worker…";
+  try {
+    var r = await fetch(cfg.worker, { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ model: cfg.model, max_tokens: 10, messages:[{role:"user",content:"Balas: ok"}] }) });
+    var d = await r.json();
+    if (!r.ok) throw new Error(errText(d, r.status));
+    $("cfgMsg").textContent = "Terhubung · model " + (d.model || cfg.model) + " siap dipakai.";
+  } catch (e) { $("cfgMsg").textContent = "Gagal: " + e.message; }
+};
+function errText(d, status){
+  if (d && d.error) return typeof d.error === "string" ? d.error : (d.error.message || JSON.stringify(d.error));
+  return "HTTP " + status;
 }
 
-var dzK=document.getElementById("dzK");
-dzK.addEventListener("dragover",function(e){e.preventDefault();dzK.classList.add("drag");});
-dzK.addEventListener("dragleave",function(){dzK.classList.remove("drag");});
-dzK.addEventListener("drop",function(e){e.preventDefault();dzK.classList.remove("drag");loadK(e.dataTransfer.files[0]);});
-document.getElementById("fiK").addEventListener("change",function(e){loadK(e.target.files[0]);});
+/* ---------- State ---------- */
+var candList = [];   // dari Excel
+var files = [];      // {id,file,name,size,status,tag}
+var docs = [];       // hasil ekstraksi
+var results = [];    // kandidat + evaluasi
+var unmatched = [];
+var filter = null;
+var busy = false;
+var seq = 0;
 
-function loadK(file){
-  if(!file)return;
-  var r=new FileReader();
-  r.onload=function(e){
-    var wb=XLSX.read(e.target.result,{type:"binary"});
-    var ws=wb.Sheets[wb.SheetNames[0]];
-    var rows=XLSX.utils.sheet_to_json(ws,{header:1});
-    kList=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return {nama:String(r[0]).trim(),jenjang:String(r[1]||"").trim()};});
-    renderKPrev();checkReady();
+/* ---------- Kandidat (Excel) ---------- */
+$("btnTemplate").onclick = function(){
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet([
+    ["Nama Kandidat","NIK","Posisi"],
+    ["Contoh: Budi Santoso","3201010101900001","Kurir Motor"],
+    ["Contoh: Rina Lestari","","Kurir Mobil"]
+  ]);
+  ws["!cols"] = [{wch:30},{wch:20},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws, "Kandidat");
+  XLSX.writeFile(wb, "template_kandidat_kurir.xlsx");
+};
+bindDrop("dropList", function(fl){ loadList(fl[0]); });
+$("fiList").onchange = function(e){ loadList(e.target.files[0]); e.target.value = ""; };
+$("btnClearList").onclick = function(){ candList = []; renderList(); };
+
+function loadList(file){
+  if (!file) return;
+  var rd = new FileReader();
+  rd.onload = function(ev){
+    var wb = XLSX.read(ev.target.result, { type:"array" });
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:false });
+    candList = rows.slice(1).filter(function(r){ return r[0] && !/^contoh/i.test(String(r[0])); }).map(function(r){
+      return { nama: String(r[0]).trim(), nik: digits(r[1]), posisi: String(r[2] || "").trim() };
+    });
+    renderList();
   };
-  r.readAsBinaryString(file);
+  rd.readAsArrayBuffer(file);
+}
+function renderList(){
+  var has = candList.length > 0;
+  $("dropList").classList.toggle("done", has);
+  $("listLabel").textContent = has ? candList.length + " kandidat dimuat" : "Upload Excel kandidat";
+  $("btnClearList").hidden = !has;
 }
 
-function renderKPrev(){
-  var prev=document.getElementById("kPrev");
-  if(!kList.length){prev.style.display="none";return;}
-  prev.style.display="block";
-  document.getElementById("kCnt").textContent=kList.length+" karyawan dimuat";
-  var html=kList.slice(0,10).map(function(k,i){return "<tr><td style='color:var(--muted)'>"+(i+1)+"</td><td>"+k.nama+"</td><td>"+(k.jenjang||"-")+"</td></tr>";}).join("");
-  if(kList.length>10)html+="<tr><td colspan='3' style='color:var(--muted);text-align:center;font-style:italic'>...+"+(kList.length-10)+" lainnya</td></tr>";
-  document.getElementById("kBody").innerHTML=html;
-  dzK.classList.add("loaded");
-  document.getElementById("sn1").classList.remove("inactive");
-  document.getElementById("sn2").classList.remove("inactive");
-}
+/* ---------- Dokumen ---------- */
+bindDrop("dropDocs", addFiles);
+$("fiDocs").onchange = function(e){ addFiles(e.target.files); e.target.value = ""; };
+$("btnClearDocs").onclick = function(){ if (!busy) { files = []; renderQueue(); } };
 
-var dzD=document.getElementById("dzD");
-dzD.addEventListener("dragover",function(e){e.preventDefault();dzD.classList.add("drag");});
-dzD.addEventListener("dragleave",function(){dzD.classList.remove("drag");});
-dzD.addEventListener("drop",function(e){e.preventDefault();dzD.classList.remove("drag");addDocs(e.dataTransfer.files);});
-document.getElementById("fiD").addEventListener("change",function(e){addDocs(e.target.files);});
-
-function addDocs(nf){
-  for(var i=0;i<nf.length;i++){
-    var f=nf[i];
-    if(!docs.find(function(x){return x.name===f.name&&x.size===f.size;}))
-      docs.push({file:f,name:f.name,size:f.size,status:"pending",type:null});
+function addFiles(list){
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    if (files.some(function(x){ return x.name === f.name && x.size === f.size; })) continue;
+    files.push({ id: ++seq, file: f, name: f.name, size: f.size, status: "wait", tag: "menunggu" });
   }
-  renderQ();checkReady();
+  renderQueue();
 }
-
-function renderQ(){
-  var q=document.getElementById("queue");
-  if(!docs.length){q.innerHTML="";return;}
-  q.innerHTML=docs.map(function(f){
-    var sz=(f.size/1024).toFixed(0)+" KB";
-    var b=f.status==="pending"?"<span class='pill pp'>menunggu</span>"
-      :f.status==="processing"?"<span class='pill ppr pulse'>&#9881; memproses</span>"
-      :f.type==="KK"?"<span class='pill pk'>&#10003; KK</span>"
-      :f.type==="Raport"?"<span class='pill pr'>&#10003; Raport</span>"
-      :f.status==="error"?"<span class='pill pe'>&#10007; gagal</span>"
-      :"<span class='pill pp'>-</span>";
-    return "<div class='qi'><span class='qn'>"+f.name+"</span><span class='qs'>"+sz+"</span>"+b+"</div>";
+function renderQueue(){
+  $("docCount").textContent = files.length;
+  $("btnClearDocs").hidden = files.length === 0 || busy;
+  $("queue").innerHTML = files.map(function(f){
+    var cls = f.status === "run" ? "run" : f.status === "ok" ? "ok" : f.status === "err" ? "err" : "";
+    return '<li><span class="fn" title="' + esc(f.name) + '">' + esc(f.name) + '</span><span class="tag ' + cls + '">' + esc(f.tag) + '</span>' +
+      (busy ? "" : '<button class="rm" type="button" data-rm="' + f.id + '" aria-label="Hapus ' + esc(f.name) + '">×</button>') + '</li>';
   }).join("");
+  $("btnGo").disabled = busy || files.length === 0;
+}
+$("queue").addEventListener("click", function(e){
+  var id = e.target.getAttribute("data-rm");
+  if (id) { files = files.filter(function(f){ return String(f.id) !== id; }); renderQueue(); }
+});
+
+function bindDrop(id, cb){
+  var el = $(id);
+  el.addEventListener("dragover", function(e){ e.preventDefault(); el.classList.add("drag"); });
+  el.addEventListener("dragleave", function(){ el.classList.remove("drag"); });
+  el.addEventListener("drop", function(e){ e.preventDefault(); el.classList.remove("drag"); cb(e.dataTransfer.files); });
 }
 
-function checkReady(){
-  var n=docs.filter(function(f){return f.status==="pending";}).length;
-  var ok=kList.length>0&&n>0;
-  document.getElementById("btnGo").disabled=!ok||busy;
-  document.getElementById("rdyNote").textContent=ok?kList.length+" karyawan, "+n+" dokumen siap":"";
-  if(n>0)document.getElementById("sn3").classList.remove("inactive");
+/* ---------- Pembacaan dokumen (Claude, output via tool) ---------- */
+var SYSTEM = [
+  "Kamu membaca dokumen rekrutmen kurir Indonesia: KTP, SIM, SKCK, atau Ijazah/STTB.",
+  "Aturan:",
+  "- Salin teks persis seperti tercetak. Jangan menebak. Jika tidak terbaca, kosongkan field dan turunkan nilai keyakinan.",
+  "- Jangan pernah mengisi field dengan label formulir (mis. 'NAMA', 'NIK', 'Tempat/Tgl Lahir').",
+  "- Foto bisa miring, terbalik, buram, atau terpotong. Putar arah baca seperlunya.",
+  "- Semua tanggal dalam format YYYY-MM-DD. Jika berlaku seumur hidup, isi berlaku_hingga dengan 'SEUMUR HIDUP'.",
+  "- NIK hanya 16 digit angka tanpa spasi.",
+  "- SIM: golongan_sim persis seperti tercetak (A, B1, B2, C, CI, CII, D). Nomor SIM di nomor_dokumen.",
+  "- SKCK: nomor SKCK di nomor_dokumen, kantor penerbit (Polsek/Polres/Polda) di penerbit, isi kolom keterangan catatan kepolisian di keterangan_skck, keperluan di keperluan_skck.",
+  "- Ijazah: nama sekolah di penerbit, jenjang di jenjang_pendidikan (SD, SMP, SMA, SMK, MA, MTS, PAKET A/B/C, D3, S1, dst), nomor seri di nomor_dokumen.",
+  "- Jika dokumen bukan salah satu dari empat jenis itu, jenis = LAINNYA.",
+  "- keyakinan: 0 sampai 1, seberapa yakin semua field penting terbaca benar."
+].join("\n");
+
+var TOOL = {
+  name: "catat_dokumen",
+  description: "Catat isi satu dokumen rekrutmen kurir.",
+  input_schema: {
+    type: "object",
+    properties: {
+      jenis: { type:"string", enum:["KTP","SIM","SKCK","IJAZAH","LAINNYA"] },
+      nama: { type:"string" },
+      nik: { type:"string" },
+      tempat_lahir: { type:"string" },
+      tanggal_lahir: { type:"string", description:"YYYY-MM-DD" },
+      jenis_kelamin: { type:"string", enum:["L","P",""] },
+      alamat: { type:"string" },
+      nomor_dokumen: { type:"string" },
+      golongan_sim: { type:"string" },
+      tanggal_terbit: { type:"string", description:"YYYY-MM-DD" },
+      berlaku_hingga: { type:"string", description:"YYYY-MM-DD atau SEUMUR HIDUP" },
+      penerbit: { type:"string" },
+      jenjang_pendidikan: { type:"string" },
+      tahun_lulus: { type:"string" },
+      keterangan_skck: { type:"string" },
+      keperluan_skck: { type:"string" },
+      keyakinan: { type:"number" },
+      catatan_kualitas: { type:"string", description:"Masalah foto jika ada: miring, buram, terpotong, silau" }
+    },
+    required: ["jenis","nama","keyakinan"]
+  }
+};
+
+async function readFile(file, rotate){
+  var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
+  if (isPdf) {
+    var b64 = await new Promise(function(res, rej){ var r = new FileReader(); r.onload = function(){ res(r.result.split(",")[1]); }; r.onerror = rej; r.readAsDataURL(file); });
+    return { type:"document", source:{ type:"base64", media_type:"application/pdf", data:b64 } };
+  }
+  var url = URL.createObjectURL(file);
+  try {
+    var img = await new Promise(function(res, rej){ var i = new Image(); i.onload = function(){ res(i); }; i.onerror = function(){ rej(new Error("Gambar tidak bisa dibuka")); }; i.src = url; });
+    var max = 2000, w = img.naturalWidth, h = img.naturalHeight;
+    var s = Math.min(1, max / Math.max(w, h)); w = Math.round(w * s); h = Math.round(h * s);
+    var c = document.createElement("canvas");
+    var side = rotate === 90 || rotate === 270;
+    c.width = side ? h : w; c.height = side ? w : h;
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.translate(c.width / 2, c.height / 2); ctx.rotate(rotate * Math.PI / 180);
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    return { type:"image", source:{ type:"base64", media_type:"image/jpeg", data: c.toDataURL("image/jpeg", 0.88).split(",")[1] } };
+  } finally { URL.revokeObjectURL(url); }
 }
 
-function addLog(msg,t){
-  var el=document.getElementById("log");el.style.display="block";
-  var ts=new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  el.innerHTML+="<div><span class='lts'>["+ts+"]</span> <span class='l"+t+"'>"+msg+"</span></div>";
-  el.scrollTop=el.scrollHeight;
-}
-
-function setP(pct,lbl,sub){
-  document.getElementById("pgwrap").style.display="block";
-  document.getElementById("pgf").style.width=pct+"%";
-  document.getElementById("pgp").textContent=pct+"%";
-  document.getElementById("pgl").textContent=lbl;
-  document.getElementById("pgs").textContent=sub||"";
-}
-
-function toB64(file){
-  return new Promise(function(res,rej){
-    var r=new FileReader();
-    r.onload=function(){res(r.result.split(",")[1]);};
-    r.onerror=rej;
-    r.readAsDataURL(file);
+async function askClaude(block){
+  var r = await fetch(cfg.worker, {
+    method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      model: cfg.model, max_tokens: 1200, system: SYSTEM,
+      tools: [TOOL], tool_choice: { type:"tool", name:"catat_dokumen" },
+      messages: [{ role:"user", content:[ block, { type:"text", text:"Baca dokumen ini lalu catat isinya." } ] }]
+    })
   });
+  var d = await r.json().catch(function(){ return {}; });
+  if (!r.ok) throw new Error(errText(d, r.status));
+  var use = (d.content || []).find(function(c){ return c.type === "tool_use"; });
+  if (!use) throw new Error("Model tidak mengembalikan data");
+  return use.input;
 }
 
-function getMT(file){
-  var e=file.name.split(".").pop().toLowerCase();
-  if(e==="pdf")return"application/pdf";
-  if(e==="png")return"image/png";
-  if(e==="webp")return"image/webp";
-  return"image/jpeg";
-}
-
-function normJ(j){
-  if(!j)return"";
-  var t=j.toUpperCase();
-  if(t.indexOf("PAUD")>=0||t.indexOf("TK")>=0||t.indexOf("/TK")>=0||t.indexOf("RA")>=0||t.indexOf("TAMAN KANAK")>=0||t.indexOf("KELOMPOK")>=0)return"PAUD/TK";
-  if(t.indexOf("PESANTREN")>=0||t.indexOf("DINIYAH")>=0)return"Pesantren/Madrasah";
-  if(t.indexOf("PERGURUAN")>=0||t.indexOf("UNIVERSITAS")>=0||t.indexOf("POLITEKNIK")>=0||t.indexOf("S1")>=0||t.indexOf("S2")>=0||t.indexOf("D3")>=0||t.indexOf("D4")>=0)return"Perguruan Tinggi";
-  if(t.indexOf("SMK")>=0)return"SMK";
-  if(t.indexOf("SMA")>=0||t.indexOf("ALIYAH")>=0)return"SMA";
-  if(t.indexOf("SMP")>=0||t.indexOf("MTS")>=0)return"SMP";
-  if(t.indexOf("SD")>=0||t.indexOf("IBTIDAIYAH")>=0)return"SD";
-  return j.trim();
-}
-
-var EXTRACT_PROMPT = `Kamu adalah sistem ekstraksi dokumen untuk validasi beasiswa karyawan. Tugasmu membaca dan mengekstrak data dari foto atau scan dokumen meski foto miring, buram, kontras rendah, atau sebagian terpotong.
-
-LANGKAH 1 - Tentukan tipe dokumen:
-- KARTU KELUARGA: ada header KARTU KELUARGA, nomor KK, kolom NIK, nama kepala keluarga, daftar anggota dengan hubungan (Kepala Keluarga / Istri / Anak)
-- RAPORT: dokumen penilaian anak dari sekolah, bisa berupa:
-  * Raport SD/SMP/SMA/SMK: ada nama peserta didik, nama sekolah, kelas, semester, tahun pelajaran, daftar mata pelajaran
-  * Raport PAUD/TK/RA: ada nama anak, nama lembaga PAUD/TK/RA, penilaian perkembangan (BB/MB/BSH/BSB atau centang), tanggal/periode
-  * Raport Pesantren/Madrasah: ada nama santri, nama pondok/madrasah, penilaian kitab atau mata pelajaran agama
-- Jika tidak jelas, coba baca semua orientasi dokumen sebelum memutuskan UNKNOWN
-
-LANGKAH 2 - Ekstrak data:
-
-Jika KARTU KELUARGA, ekstrak HANYA anggota dengan Status Hubungan = Anak:
-{"tipe":"KK","no_kk":"","kepala_keluarga":"","anak":[{"nama":"","jenis_kelamin":"L atau P","tanggal_lahir":"","pendidikan":""}]}
-- Isi pendidikan sesuai yang tertulis di KK (Belum Tamat SD, SLTA/Sederajat, Tidak/Blm Sekolah, dll)
-- Hanya masukkan anggota hubungan = Anak
-- Jika foto miring atau buram, tetap coba baca dan isi semampu mungkin
-
-Jika RAPORT semua jenis:
-{"tipe":"Raport","nama_siswa":"","nama_sekolah":"","jenjang":"","kelas":"","semester":"","tahun_ajaran":""}
-- jenjang pilih salah satu: PAUD/TK atau SD atau SMP atau SMA atau SMK atau Perguruan Tinggi atau Pesantren/Madrasah
-- PAUD/TK/RA/Kelompok Bermain = PAUD/TK
-- SD/MI/Madrasah Ibtidaiyah = SD
-- SMP/MTs = SMP, SMA/MA = SMA, SMK = SMK
-- Universitas/Politeknik/D3/D4/S1/S2 = Perguruan Tinggi
-- semester: 1 atau 2, untuk PAUD boleh kosong
-- tahun_ajaran: format 2024/2025
-- Jika field tidak terbaca, isi dengan string kosong
-
-Jika tidak bisa dikenali: {"tipe":"UNKNOWN","alasan":"jelaskan kenapa"}
-
-Kembalikan HANYA JSON murni tanpa markdown.`;
-
-async function callAPI(msgs, maxTok){
-  var r=await fetch(WORKER,{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({max_tokens:maxTok||1500,messages:msgs})});
-  if(!r.ok)throw new Error("Worker "+r.status);
-  var d=await r.json();
-  if(d.error)throw new Error(d.error);
-  return d.content.map(function(c){return c.text||"";}).join("").trim();
-}
-
-async function extractDoc(fo){
-  var b64=await toB64(fo.file),m=getMT(fo.file);
-  var item=m==="application/pdf"
-    ?{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}
-    :{type:"image",source:{type:"base64",media_type:m,data:b64}};
-  var text=await callAPI([{role:"user",content:[item,{type:"text",text:EXTRACT_PROMPT}]}],1500);
-  return JSON.parse(text.replace(/```json|```/g,"").trim());
-}
-
-async function matchKaryawan(nama, kkDocs, rapDocs){
-  var kkLines=kkDocs.map(function(k,i){return i+". "+k.kepala_keluarga+" (anak: "+k.anak.map(function(a){return a.nama;}).join(", ")+")"}).join("\n");
-  var rapLines=rapDocs.map(function(r,i){return i+". "+r.nama_siswa+" | "+r.jenjang+" | "+r.tahun_ajaran;}).join("\n");
-
-  var jsnFmt='{"kk_index":null_atau_angka,"raport_index":null_atau_angka,"alasan_kk":"","alasan_raport":""}';
-  var prompt="Cocokkan nama karyawan dengan KK dan Raport. Perhatikan kemungkinan OCR error.\n\nNama karyawan: "+nama+"\n\nKK: "+(kkLines||"tidak ada")+"\n\nRaport: "+(rapLines||"tidak ada")+"\n\nReturn JSON only: "+jsnFmt;
-  var text=await callAPI([{role:"user",content:prompt}],300);
-  return JSON.parse(text.replace(/```json|```/g,"").trim());
-}
-
-async function startProcess(){
-  if(busy)return;
-  busy=true;
-  document.getElementById("btnGo").disabled=true;
-  document.getElementById("resSec").style.display="none";
-
-  var toProc=docs.filter(function(f){return f.status==="pending";});
-  var kkDocs=[],rapDocs=[],kkRows=[],rapRows=[];
-
-  // FASE 1: Ekstrak
-  addLog("Fase 1: Ekstrak "+toProc.length+" dokumen...","in");
-  for(var i=0;i<toProc.length;i++){
-    var f=toProc[i];f.status="processing";renderQ();
-    setP(Math.round(i/toProc.length*50),"Mengekstrak dokumen",(i+1)+"/"+toProc.length+": "+f.name);
-    addLog("Membaca: "+f.name,"in");
-    try{
-      var r=await extractDoc(f);
-      if(r.tipe==="KK"){
-        f.status="done";f.type="KK";
-        var anak=r.anak||[];
-        kkDocs.push({kepala_keluarga:r.kepala_keluarga,anak:anak,no_kk:r.no_kk,sumber:f.name});
-        anak.forEach(function(a){
-          kkRows.push({sumber:f.name,no_kk:r.no_kk,kepala_keluarga:r.kepala_keluarga,nama:a.nama,jenis_kelamin:a.jenis_kelamin,tanggal_lahir:a.tanggal_lahir,pendidikan:a.pendidikan});
-        });
-        if(!anak.length)kkRows.push({sumber:f.name,no_kk:r.no_kk,kepala_keluarga:r.kepala_keluarga,nama:"",jenis_kelamin:"",tanggal_lahir:"",pendidikan:""});
-        addLog("&#10003; KK: "+r.kepala_keluarga+" ("+anak.length+" anak)","ok");
-      }else if(r.tipe==="Raport"){
-        f.status="done";f.type="Raport";
-        var jn=normJ(r.jenjang);
-        rapDocs.push({nama_siswa:r.nama_siswa,jenjang:jn,tahun_ajaran:r.tahun_ajaran,kelas:r.kelas,nama_sekolah:r.nama_sekolah,semester:r.semester,sumber:f.name});
-        rapRows.push({sumber:f.name,nama_siswa:r.nama_siswa,jenjang:jn,nama_sekolah:r.nama_sekolah,kelas:r.kelas,semester:r.semester?"Semester "+r.semester:"",tahun_ajaran:r.tahun_ajaran});
-        addLog("&#10003; Raport: "+r.nama_siswa+" | "+jn,"ok");
-      }else{
-        f.status="error";
-        addLog("&#9888; "+f.name+": "+(r.alasan||"tidak dikenali"),"w");
-      }
-    }catch(err){
-      f.status="error";
-      addLog("&#10007; "+f.name+": "+err.message,"e");
+async function extract(f){
+  var isPdf = /\.pdf$/i.test(f.name);
+  var best = await askClaude(await readFile(f.file, 0));
+  if (!isPdf && (best.jenis === "LAINNYA" || (best.keyakinan || 0) < 0.55)) {
+    var tries = [90, 270];
+    for (var i = 0; i < tries.length; i++) {
+      log("  " + f.name + ": keyakinan rendah, coba putar " + tries[i] + "°", "w");
+      var alt = await askClaude(await readFile(f.file, tries[i]));
+      var better = (best.jenis === "LAINNYA" && alt.jenis !== "LAINNYA") || ((alt.keyakinan || 0) > (best.keyakinan || 0) && alt.jenis !== "LAINNYA");
+      if (better) best = alt;
+      if ((best.keyakinan || 0) >= 0.75 && best.jenis !== "LAINNYA") break;
     }
-    renderQ();
   }
-
-  // FASE 2: AI Matching
-  addLog("Fase 2: AI matching "+kList.length+" karyawan...","in");
-  results=[];
-
-  for(var j=0;j<kList.length;j++){
-    var kar=kList[j];
-    setP(50+Math.round(j/kList.length*35),"AI matching",(j+1)+"/"+kList.length+": "+kar.nama);
-    addLog("Mencocokkan: "+kar.nama,"in");
-    var row={
-      nama_karyawan:kar.nama,jenjang_diajukan:kar.jenjang,
-      nama_anak_kk:"",jenjang_kk:"",
-      nama_siswa_raport:"",jenjang_raport:"",tahun_ajaran:"",
-      status:"",notes:[]
-    };
-    try{
-      var m=await matchKaryawan(kar.nama,kkDocs,rapDocs);
-      var jDiaj=normJ(kar.jenjang);
-      if(m.kk_index===null||m.kk_index===undefined){
-        row.status="INVALID";
-        row.notes.push("KK tidak ditemukan: "+m.alasan_kk);
-      }else{
-        var kk=kkDocs[m.kk_index];
-        var ak=kk.anak||[];
-        row.nama_anak_kk=ak.map(function(a){return a.nama;}).join(", ");
-        row.jenjang_kk=ak.map(function(a){return a.pendidikan||"-";}).join(", ");
-        if(m.raport_index===null||m.raport_index===undefined){
-          row.status="PARTIAL";
-          row.notes.push("KK ditemukan ("+kk.kepala_keluarga+"). Raport tidak ditemukan: "+m.alasan_raport);
-        }else{
-          var rap=rapDocs[m.raport_index];
-          row.nama_siswa_raport=rap.nama_siswa;
-          row.jenjang_raport=rap.jenjang;
-          row.tahun_ajaran=rap.tahun_ajaran;
-          if(rap.jenjang===jDiaj){
-            row.status="VALID";
-            var akJenj=ak.map(function(a){return normJ(a.pendidikan);});
-            if(akJenj.indexOf(jDiaj)<0)row.notes.push("Info: jenjang di KK ("+row.jenjang_kk+") berbeda dari Raport, kemungkinan KK belum diperbarui");
-          }else{
-            row.status="INVALID";
-            row.notes.push("Jenjang Raport ("+rap.jenjang+") tidak sesuai pengajuan ("+kar.jenjang+")");
-          }
-        }
-      }
-    }catch(err){
-      row.status="INVALID";
-      row.notes.push("Error: "+err.message);
-    }
-    row.notes=row.notes.join("; ")||"-";
-    results.push(row);
-    addLog((row.status==="VALID"?"&#10003;":row.status==="PARTIAL"?"&#9888;":"&#10007;")+" "+kar.nama+" → "+row.status,
-      row.status==="VALID"?"ok":row.status==="PARTIAL"?"w":"e");
-  }
-
-  // FASE 3: Kirim ke Sheets
-  setP(88,"Menyimpan ke Google Sheets...","");
-  var bid="VAL-"+Date.now().toString(36).toUpperCase();
-  var shOk=false;
-  if(SHEETS){
-    try{
-      if(kkRows.length||rapRows.length){
-        await fetch(SHEETS,{method:"POST",body:JSON.stringify({action:"submit_batch",batch_id:bid,submitted_by:"PIC",total_files:toProc.length,kk_rows:kkRows,raport_rows:rapRows,failed_files:[]})});
-      }
-      var r2=await fetch(SHEETS,{method:"POST",body:JSON.stringify({action:"submit_validasi",batch_id:bid,submitted_by:"PIC",
-        rows:results.map(function(r){return {nama_karyawan:r.nama_karyawan,jenjang_diajukan:r.jenjang_diajukan,nama_anak_kk:r.nama_anak_kk,jenjang_kk:r.jenjang_kk,nama_siswa_raport:r.nama_siswa_raport,jenjang_raport:r.jenjang_raport,tahun_ajaran:r.tahun_ajaran,status:r.status,notes:r.notes};})})}
-      );
-      var d2=await r2.json();
-      if(d2.status==="ok"){shOk=true;addLog("&#10003; Tersimpan ke Google Sheets ("+d2.saved+" baris)","ok");}
-    }catch(e2){addLog("&#10007; Gagal kirim Sheets: "+e2.message,"e");}
-  }
-
-  setP(100,"Selesai!","");
-  renderResult(shOk,bid);
-  busy=false;
+  return best;
 }
 
-function renderResult(shOk,bid){
-  var valid=results.filter(function(r){return r.status==="VALID";}).length;
-  var inv=results.filter(function(r){return r.status==="INVALID";}).length;
-  var part=results.filter(function(r){return r.status==="PARTIAL";}).length;
-  document.getElementById("rT").textContent=results.length;
-  document.getElementById("rV").textContent=valid;
-  document.getElementById("rI").textContent=inv;
-  document.getElementById("rP").textContent=part;
-  document.getElementById("resSub").textContent=valid+" valid, "+part+" partial, "+inv+" tidak valid";
-  var sb=document.getElementById("sbar");
-  if(shOk){sb.style.display="flex";document.getElementById("sbMsg").textContent="Tersimpan ke Google Sheets — Batch "+bid;}
-  else sb.style.display="none";
-  document.getElementById("resBody").innerHTML=results.map(function(r){
-    var badge=r.status==="VALID"?"<span class='sv svv'>&#10003; Valid</span>"
-      :r.status==="PARTIAL"?"<span class='sv svp'>&#9888; Partial</span>"
-      :"<span class='sv svi'>&#10007; Invalid</span>";
-    return "<tr><td style='font-weight:500'>"+r.nama_karyawan+"</td><td>"+(r.jenjang_diajukan||"-")+"</td><td>"+(r.nama_anak_kk||"-")+"</td><td>"+(r.jenjang_kk||"-")+"</td><td>"+(r.nama_siswa_raport||"-")+"</td><td>"+(r.jenjang_raport||"-")+"</td><td>"+(r.tahun_ajaran||"-")+"</td><td>"+badge+"</td><td class='nc'>"+r.notes+"</td></tr>";
+async function pool(items, n, fn){
+  var i = 0;
+  async function worker(){ while (i < items.length) { var k = i++; await fn(items[k], k); } }
+  var ws = []; for (var j = 0; j < Math.min(n, items.length); j++) ws.push(worker());
+  await Promise.all(ws);
+}
+
+/* ---------- Proses ---------- */
+$("btnGo").onclick = run;
+async function run(){
+  if (busy || !files.length) return;
+  if (!cfg.worker) { $("settings").hidden = false; $("cfgMsg").textContent = "Isi URL worker dulu."; return; }
+  busy = true; docs = []; $("log").innerHTML = ""; $("log").hidden = false; $("progress").hidden = false;
+  files.forEach(function(f){ f.status = "wait"; f.tag = "menunggu"; });
+  renderQueue();
+  var done = 0;
+  log("Membaca " + files.length + " dokumen dengan " + cfg.model);
+  await pool(files, 3, async function(f){
+    f.status = "run"; f.tag = "membaca"; renderQueue();
+    try {
+      var d = await extract(f);
+      d.file = f.name; d.nik = digits(d.nik); d.nama = clean(d.nama);
+      docs.push(d);
+      f.status = d.jenis === "LAINNYA" ? "err" : "ok";
+      f.tag = d.jenis === "LAINNYA" ? "tidak dikenali" : d.jenis;
+      log("✓ " + f.name + " → " + d.jenis + " · " + (d.nama || "nama tidak terbaca") + " · keyakinan " + pct(d.keyakinan), d.jenis === "LAINNYA" ? "w" : "k");
+    } catch (e) {
+      f.status = "err"; f.tag = "gagal";
+      docs.push({ jenis:"GAGAL", file:f.name, error:e.message });
+      log("✕ " + f.name + ": " + e.message, "e");
+    }
+    done++;
+    $("barFill").style.width = Math.round(done / files.length * 100) + "%";
+    $("progText").textContent = done + " dari " + files.length + " dokumen selesai";
+    renderQueue();
+  });
+  buildResults();
+  busy = false; renderQueue();
+  $("progText").textContent = "Selesai · " + results.length + " kandidat · " + docs.length + " dokumen";
+  render();
+}
+
+/* ---------- Pencocokan ---------- */
+function clean(s){ return String(s || "").toUpperCase().replace(/[^A-Z' .,-]/g, " ").replace(/\s+/g, " ").trim(); }
+function digits(s){ return String(s || "").replace(/\D/g, ""); }
+function normName(s){
+  return clean(s).replace(/[.,'-]/g, " ")
+    .replace(/\b(MUHAMAD|MOHAMMAD|MOHAMAD|MUHAMMED|MOCH|MOCHAMAD|MOCHAMMAD|MOH|MUH|M)\b/g, "MUHAMMAD")
+    .replace(/\s+/g, " ").trim();
+}
+function lev(a, b){
+  if (a === b) return 0;
+  var m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  var prev = []; for (var j = 0; j <= n; j++) prev[j] = j;
+  for (var i = 1; i <= m; i++) {
+    var cur = [i];
+    for (var k = 1; k <= n; k++) cur[k] = Math.min(prev[k] + 1, cur[k - 1] + 1, prev[k - 1] + (a[i - 1] === b[k - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function ratio(a, b){ var L = Math.max(a.length, b.length); return L ? 1 - lev(a, b) / L : 0; }
+function nameSim(a, b){
+  a = normName(a); b = normName(b);
+  if (!a || !b) return 0;
+  var full = ratio(a, b);
+  var ta = a.split(" ").sort().join(" "), tb = b.split(" ").sort().join(" ");
+  var sorted = ratio(ta, tb);
+  // nama pendek di salah satu dokumen (mis. "ANDRIAN" vs "ANDRIAN SAPUTRA")
+  var A = a.split(" "), B = b.split(" ");
+  var short = A.length <= B.length ? A : B, long = A.length <= B.length ? B : A;
+  var hit = short.filter(function(t){ return long.some(function(u){ return ratio(t, u) >= 0.8; }); }).length;
+  var contain = hit === short.length ? 0.86 : 0;
+  return Math.max(full, sorted, contain);
+}
+function nikDiff(a, b){
+  if (!a || !b || a.length !== b.length) return 99;
+  var d = 0; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  return d;
+}
+function score(doc, c){
+  if (doc.nik && c.nik && doc.nik.length === 16 && c.nik.length === 16) {
+    var nd = nikDiff(doc.nik, c.nik);
+    if (nd === 0) return 2;
+    if (nd > 2) return nameSim(doc.nama, c.nama) - 0.4;
+  }
+  var s = nameSim(doc.nama, c.nama);
+  if (doc.tanggal_lahir && c.dob) s += doc.tanggal_lahir === c.dob ? 0.15 : -0.15;
+  return s;
+}
+var THRESH = 0.75;
+var ORDER = { KTP:0, SKCK:1, SIM:2, IJAZAH:3 };
+
+function newCand(src){
+  return { nama: src.nama || "", nik: src.nik || "", dob: "", posisi: src.posisi || "", fromList: !!src.fromList, slots: {}, extra: [] };
+}
+function attach(c, d){
+  var cur = c.slots[d.jenis];
+  if (cur) {
+    if ((d.keyakinan || 0) > (cur.keyakinan || 0)) { c.extra.push(cur); c.slots[d.jenis] = d; } else c.extra.push(d);
+  } else c.slots[d.jenis] = d;
+  if (d.jenis === "KTP") {
+    if (!c.nik && d.nik) c.nik = d.nik;
+    if (d.tanggal_lahir) c.dob = d.tanggal_lahir;
+    if (!c.fromList && d.nama) c.nama = d.nama;
+  }
+  if (!c.dob && d.tanggal_lahir) c.dob = d.tanggal_lahir;
+  if (!c.nik && d.nik && d.jenis === "SKCK") c.nik = d.nik;
+}
+
+function buildResults(){
+  var cands = candList.map(function(k){ return newCand({ nama:k.nama, nik:k.nik, posisi:k.posisi, fromList:true }); });
+  unmatched = [];
+  var usable = docs.filter(function(d){ return ORDER[d.jenis] !== undefined; });
+  docs.filter(function(d){ return ORDER[d.jenis] === undefined; }).forEach(function(d){ unmatched.push(d); });
+  usable.sort(function(a, b){ return ORDER[a.jenis] - ORDER[b.jenis] || (b.keyakinan || 0) - (a.keyakinan || 0); });
+
+  usable.forEach(function(d){
+    var best = null, bestS = -1;
+    cands.forEach(function(c){ var s = score(d, c); if (s > bestS) { bestS = s; best = c; } });
+    if (best && bestS >= THRESH) { attach(best, d); return; }
+    if (!candList.length) { var c = newCand({ nama:d.nama, nik:d.nik }); attach(c, d); cands.push(c); return; }
+    unmatched.push(d);
+  });
+  results = cands.map(evaluate);
+  var rank = { bad:0, none:1, warn:2, ok:3 };
+  results.sort(function(a, b){ return rank[a.status] - rank[b.status] || a.nama.localeCompare(b.nama); });
+}
+
+/* ---------- Aturan ---------- */
+function todayISO(){ var t = new Date(); return t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()); }
+function pad(n){ return (n < 10 ? "0" : "") + n; }
+function isISO(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s || ""); }
+function addDays(iso, n){ var d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function age(dob){
+  if (!isISO(dob)) return null;
+  var t = new Date(), b = new Date(dob + "T00:00:00");
+  var a = t.getFullYear() - b.getFullYear();
+  if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
+  return a;
+}
+function fmtDate(iso){
+  if (!isISO(iso)) return iso || "";
+  var m = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  var p = iso.split("-"); return +p[2] + " " + m[+p[1] - 1] + " " + p[0];
+}
+// NIK digit 7–12 = tanggal lahir DDMMYY (perempuan: DD + 40)
+function nikVsDob(nik, dob, sex){
+  if (nik.length !== 16 || !isISO(dob)) return null;
+  var dd = +nik.substr(6, 2), mm = nik.substr(8, 2), yy = nik.substr(10, 2);
+  var female = dd > 40; if (female) dd -= 40;
+  var p = dob.split("-");
+  var okDate = pad(dd) === p[2] && mm === p[1] && yy === p[0].slice(2);
+  var okSex = !sex || (sex === "P") === female;
+  return { okDate: okDate, okSex: okSex };
+}
+function eduRank(s){
+  s = (s || "").toUpperCase();
+  if (/S3|DOKTOR/.test(s)) return 7;
+  if (/S2|MAGISTER/.test(s)) return 6;
+  if (/S1|SARJANA/.test(s)) return 5;
+  if (/D1|D2|D3|D4|DIPLOMA/.test(s)) return 4;
+  if (/SMA|SMK|SMU|STM|MA\b|ALIYAH|PAKET C|SLTA/.test(s)) return 3;
+  if (/SMP|MTS|TSANAWIYAH|PAKET B|SLTP/.test(s)) return 2;
+  if (/SD|MI\b|IBTIDAIYAH|PAKET A/.test(s)) return 1;
+  return 0;
+}
+var EDU_NAME = { 1:"SD", 2:"SMP", 3:"SMA/SMK", 4:"Diploma" };
+function simReq(posisi){ return /mobil|van|car|roda 4|r4/i.test(posisi || "") ? "A" : "C"; }
+
+function evaluate(c){
+  var req = { KTP:$("rqKTP").checked, SIM:$("rqSIM").checked, SKCK:$("rqSKCK").checked, IJAZAH:$("rqIJAZAH").checked };
+  var minAge = +$("cfgMinAge").value || 0, maxAge = +$("cfgMaxAge").value || 0, minEdu = +$("cfgEdu").value;
+  var today = todayISO(), soon = addDays(today, 30);
+  var out = { cand: c, nama: c.nama || "(tanpa nama)", nik: c.nik, posisi: c.posisi, slots: {}, notes: [] };
+  var ktp = c.slots.KTP;
+
+  ["KTP","SIM","SKCK","IJAZAH"].forEach(function(t){
+    var d = c.slots[t], s = { state:"ok", notes:[] };
+    function warn(m){ if (s.state === "ok") s.state = "warn"; s.notes.push(m); }
+    function bad(m){ s.state = "bad"; s.notes.push(m); }
+    if (!d) { s.state = req[t] ? "none" : "skip"; if (req[t]) s.notes.push(label(t) + " belum ada"); out.slots[t] = s; return; }
+
+    if ((d.keyakinan || 0) < 0.7) warn("Terbaca kurang jelas (" + pct(d.keyakinan) + ")" + (d.catatan_kualitas ? ": " + d.catatan_kualitas : ""));
+    if (c.fromList && d.nama && nameSim(d.nama, c.nama) < 0.9) warn("Nama di " + label(t) + " \"" + d.nama + "\" beda dengan daftar");
+    if (t !== "KTP" && ktp && d.nama && ktp.nama && nameSim(d.nama, ktp.nama) < 0.9) warn("Nama di " + label(t) + " beda dengan KTP");
+    if (t !== "KTP" && ktp && isISO(d.tanggal_lahir) && isISO(ktp.tanggal_lahir) && d.tanggal_lahir !== ktp.tanggal_lahir) warn("Tanggal lahir di " + label(t) + " beda dengan KTP");
+
+    if (t === "KTP") {
+      if (d.nik.length !== 16) warn("NIK tidak 16 digit (" + (d.nik || "kosong") + ")");
+      var chk = nikVsDob(d.nik, d.tanggal_lahir, d.jenis_kelamin);
+      if (chk && !chk.okDate) warn("Digit tanggal lahir di NIK tidak cocok dengan tanggal lahir");
+      if (chk && chk.okDate && !chk.okSex) warn("Kode jenis kelamin di NIK tidak cocok");
+      if (c.fromList && c.nik && c.nik.length === 16 && d.nik && d.nik !== c.nik) warn("NIK beda dengan daftar kandidat");
+      var a = age(d.tanggal_lahir);
+      if (a === null) warn("Tanggal lahir tidak terbaca, usia tidak bisa dihitung");
+      else if (minAge && a < minAge) bad("Usia " + a + " tahun, di bawah minimal " + minAge);
+      else if (maxAge && a > maxAge) bad("Usia " + a + " tahun, di atas maksimal " + maxAge);
+    }
+    if (t === "SIM") {
+      var need = simReq(c.posisi);
+      var gol = (d.golongan_sim || "").toUpperCase().replace(/\s+/g, "");
+      if (!gol) warn("Golongan SIM tidak terbaca");
+      else if (gol.charAt(0) !== need) bad("SIM " + gol + ", posisi butuh SIM " + need);
+      expiry(d, s, today, soon, "SIM");
+    }
+    if (t === "SKCK") {
+      expiry(d, s, today, soon, "SKCK");
+      var ket = (d.keterangan_skck || "").toUpperCase();
+      if (ket && !/TIDAK (MEMILIKI|PERNAH|TERDAPAT|ADA)/.test(ket)) warn("Keterangan SKCK perlu dibaca manual");
+      if (ktp && d.nik && ktp.nik && d.nik.length === 16 && d.nik !== ktp.nik) warn("NIK di SKCK beda dengan KTP");
+    }
+    if (t === "IJAZAH") {
+      var r = eduRank(d.jenjang_pendidikan);
+      if (!r) warn("Jenjang ijazah tidak terbaca");
+      else if (r < minEdu) bad("Pendidikan " + d.jenjang_pendidikan + ", minimal " + EDU_NAME[minEdu]);
+    }
+    out.slots[t] = s;
+  });
+
+  if (c.extra.length) out.notes.push(c.extra.length + " dokumen ganda (dipakai yang paling jelas)");
+  var states = Object.keys(out.slots).map(function(k){ return out.slots[k].state; });
+  out.status = states.indexOf("bad") >= 0 ? "bad" : states.indexOf("none") >= 0 ? "none" : states.indexOf("warn") >= 0 ? "warn" : "ok";
+  ["KTP","SIM","SKCK","IJAZAH"].forEach(function(k){ out.notes = out.notes.concat(out.slots[k].notes); });
+  return out;
+}
+function expiry(d, s, today, soon, name){
+  var v = (d.berlaku_hingga || "").toUpperCase();
+  if (v === "SEUMUR HIDUP") return;
+  if (!isISO(v)) { if (s.state === "ok") s.state = "warn"; s.notes.push("Masa berlaku " + name + " tidak terbaca"); return; }
+  if (v < today) { s.state = "bad"; s.notes.push(name + " kedaluwarsa sejak " + fmtDate(v)); }
+  else if (v <= soon) { if (s.state === "ok") s.state = "warn"; s.notes.push(name + " habis " + fmtDate(v)); }
+}
+function label(t){ return t === "IJAZAH" ? "Ijazah" : t; }
+function pct(x){ return Math.round((x || 0) * 100) + "%"; }
+
+/* ---------- Render ---------- */
+var ST = { ok:{ t:"Lolos", c:"s-ok", i:"✓" }, warn:{ t:"Perlu Cek", c:"s-warn", i:"!" }, bad:{ t:"Tidak Memenuhi", c:"s-bad", i:"✕" }, none:{ t:"Belum Lengkap", c:"s-none", i:"–" }, skip:{ t:"Tidak wajib", c:"s-none", i:"·" } };
+
+document.querySelectorAll(".sum").forEach(function(b){
+  b.onclick = function(){ filter = filter === b.dataset.f ? null : b.dataset.f; render(); };
+});
+$("search").oninput = render;
+
+function render(){
+  var n = { ok:0, warn:0, bad:0, none:0 };
+  results.forEach(function(r){ n[r.status]++; });
+  $("nOk").textContent = n.ok; $("nWarn").textContent = n.warn; $("nBad").textContent = n.bad; $("nNone").textContent = n.none;
+  document.querySelectorAll(".sum").forEach(function(b){ b.classList.toggle("on", filter === b.dataset.f); });
+  $("btnExport").disabled = !results.length && !unmatched.length;
+  $("empty").hidden = results.length > 0;
+
+  var q = $("search").value.trim().toUpperCase();
+  var rows = results.filter(function(r){
+    if (filter && r.status !== filter) return false;
+    if (q && r.nama.toUpperCase().indexOf(q) < 0 && (r.nik || "").indexOf(q) < 0) return false;
+    return true;
+  });
+  $("tbody").innerHTML = rows.map(function(r, i){
+    var st = ST[r.status];
+    var cells = ["KTP","SIM","SKCK","IJAZAH"].map(function(k){
+      var s = ST[r.slots[k].state];
+      return '<td><span class="slot ' + s.c + '" title="' + esc(label(k) + ": " + s.t) + '">' + s.i + '</span></td>';
+    }).join("");
+    var notes = r.notes.length ? r.notes.slice(0, 3).map(function(x){ return "<div>" + esc(x) + "</div>"; }).join("") + (r.notes.length > 3 ? "<div>+" + (r.notes.length - 3) + " lainnya</div>" : "") : "—";
+    return '<tr class="cand ' + st.c + '" data-i="' + results.indexOf(r) + '" tabindex="0">' +
+      '<td><div class="nm">' + esc(r.nama) + '</div><div class="nik">' + fmtNik(r.nik) + '</div>' + (r.posisi ? '<div class="pos">' + esc(r.posisi) + '</div>' : "") + '</td>' +
+      cells + '<td><span class="st ' + st.c + '">' + st.t + '</span></td><td class="notes">' + notes + '</td></tr>';
   }).join("");
-  document.getElementById("resSec").style.display="block";
-  document.getElementById("resSec").scrollIntoView({behavior:"smooth"});
+
+  var um = $("unmatched");
+  if (unmatched.length) {
+    um.hidden = false;
+    um.innerHTML = "<b>" + unmatched.length + " dokumen tidak terhubung ke kandidat:</b> " + unmatched.map(function(d){
+      return esc(d.file) + " (" + esc(d.jenis === "GAGAL" ? "gagal dibaca" : d.jenis === "LAINNYA" ? "bukan KTP/SIM/SKCK/Ijazah" : d.jenis + " · " + (d.nama || "nama kosong")) + ")";
+    }).join(", ");
+  } else um.hidden = true;
+}
+function fmtNik(n){ return n ? (n.length === 16 ? n.replace(/^(\d{6})(\d{6})(\d{4})$/, "$1 $2 $3") : n) : "NIK tidak ada"; }
+
+$("tbody").addEventListener("click", toggleRow);
+$("tbody").addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleRow(e); } });
+function toggleRow(e){
+  var tr = e.target.closest("tr.cand"); if (!tr) return;
+  var next = tr.nextElementSibling;
+  if (next && next.classList.contains("detail")) { next.remove(); return; }
+  var r = results[+tr.dataset.i];
+  var html = ["KTP","SIM","SKCK","IJAZAH"].map(function(k){
+    var d = r.cand.slots[k], s = r.slots[k], st = ST[s.state];
+    if (!d) return '<div class="doc ' + st.c + '"><h4>' + label(k) + '</h4><div class="src">' + (s.state === "skip" ? "Tidak wajib" : "Belum diupload") + '</div></div>';
+    var f = fieldsFor(k, d);
+    return '<div class="doc ' + st.c + '"><h4>' + label(k) + ' <span class="conf">keyakinan ' + pct(d.keyakinan) + '</span></h4><div class="src" title="' + esc(d.file) + '">' + esc(d.file) + '</div><dl>' +
+      f.map(function(p){ return "<dt>" + p[0] + "</dt><dd>" + esc(p[1] || "—") + "</dd>"; }).join("") + "</dl>" +
+      (s.notes.length ? "<ul>" + s.notes.map(function(n){ return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>" : "") + "</div>";
+  }).join("");
+  var row = document.createElement("tr"); row.className = "detail";
+  row.innerHTML = '<td colspan="7"><div class="docs">' + html + "</div></td>";
+  tr.after(row);
+}
+function fieldsFor(k, d){
+  var base = [["Nama", d.nama]];
+  if (k === "KTP") return base.concat([["NIK", fmtNik(d.nik)], ["TTL", (d.tempat_lahir || "") + ", " + fmtDate(d.tanggal_lahir)], ["Usia", age(d.tanggal_lahir) !== null ? age(d.tanggal_lahir) + " tahun" : ""], ["JK", d.jenis_kelamin], ["Alamat", d.alamat], ["Berlaku", d.berlaku_hingga]]);
+  if (k === "SIM") return base.concat([["Golongan", d.golongan_sim], ["Nomor", d.nomor_dokumen], ["Tgl lahir", fmtDate(d.tanggal_lahir)], ["Berlaku", fmtDate(d.berlaku_hingga)], ["Penerbit", d.penerbit]]);
+  if (k === "SKCK") return base.concat([["Nomor", d.nomor_dokumen], ["NIK", fmtNik(d.nik)], ["Penerbit", d.penerbit], ["Berlaku", fmtDate(d.berlaku_hingga)], ["Keterangan", d.keterangan_skck], ["Keperluan", d.keperluan_skck]]);
+  return base.concat([["Jenjang", d.jenjang_pendidikan], ["Sekolah", d.penerbit], ["Lulus", d.tahun_lulus], ["No. seri", d.nomor_dokumen], ["Tgl lahir", fmtDate(d.tanggal_lahir)]]);
 }
 
-function dlResult(){
-  var wb=XLSX.utils.book_new();
-  var hdr=["Nama Karyawan","Jenjang Diajukan","Nama Anak (KK)","Jenjang KK","Nama Siswa (Raport)","Jenjang Raport","Tahun Ajaran Raport","Status","Notes"];
-  var rows=[hdr].concat(results.map(function(r){return [r.nama_karyawan,r.jenjang_diajukan,r.nama_anak_kk,r.jenjang_kk,r.nama_siswa_raport,r.jenjang_raport,r.tahun_ajaran,r.status,r.notes];}));
-  var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"]=[24,16,28,16,28,16,14,10,40].map(function(w){return {wch:w};});
-  XLSX.utils.book_append_sheet(wb,ws,"Hasil Validasi");
-  XLSX.writeFile(wb,"validasi_beasiswa_"+new Date().toISOString().slice(0,10)+".xlsx");
+/* ---------- Export ---------- */
+$("btnExport").onclick = function(){
+  var wb = XLSX.utils.book_new();
+  var sum = [["Nama Kandidat","NIK","Posisi","Status","KTP","SIM","SKCK","Ijazah","Catatan"]].concat(results.map(function(r){
+    return [r.nama, r.nik, r.posisi, ST[r.status].t, ST[r.slots.KTP.state].t, ST[r.slots.SIM.state].t, ST[r.slots.SKCK.state].t, ST[r.slots.IJAZAH.state].t, r.notes.join("; ")];
+  }));
+  var ws = XLSX.utils.aoa_to_sheet(sum); ws["!cols"] = [28,20,14,16,14,14,14,14,70].map(function(w){ return { wch:w }; });
+  XLSX.utils.book_append_sheet(wb, ws, "Ringkasan");
+
+  var cols = {
+    KTP: [["NIK","nik"],["Tempat Lahir","tempat_lahir"],["Tanggal Lahir","tanggal_lahir"],["JK","jenis_kelamin"],["Alamat","alamat"],["Berlaku Hingga","berlaku_hingga"]],
+    SIM: [["Golongan","golongan_sim"],["Nomor SIM","nomor_dokumen"],["Tanggal Lahir","tanggal_lahir"],["Berlaku Hingga","berlaku_hingga"],["Penerbit","penerbit"]],
+    SKCK: [["Nomor SKCK","nomor_dokumen"],["NIK","nik"],["Penerbit","penerbit"],["Tanggal Terbit","tanggal_terbit"],["Berlaku Hingga","berlaku_hingga"],["Keterangan","keterangan_skck"],["Keperluan","keperluan_skck"]],
+    IJAZAH: [["Jenjang","jenjang_pendidikan"],["Sekolah","penerbit"],["Tahun Lulus","tahun_lulus"],["No. Seri","nomor_dokumen"],["Tanggal Lahir","tanggal_lahir"]]
+  };
+  Object.keys(cols).forEach(function(k){
+    var head = ["Kandidat","Nama di Dokumen"].concat(cols[k].map(function(c){ return c[0]; })).concat(["Status","Catatan","Keyakinan","File"]);
+    var rows = [head];
+    results.forEach(function(r){
+      var d = r.cand.slots[k]; if (!d) return;
+      rows.push([r.nama, d.nama].concat(cols[k].map(function(c){ return d[c[1]] || ""; })).concat([ST[r.slots[k].state].t, r.slots[k].notes.join("; "), pct(d.keyakinan), d.file]));
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), label(k));
+  });
+  if (unmatched.length) {
+    var u = [["File","Jenis Terbaca","Nama Terbaca","NIK","Keterangan"]].concat(unmatched.map(function(d){
+      return [d.file, d.jenis, d.nama || "", d.nik || "", d.error || d.catatan_kualitas || ""];
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(u), "Tidak Terhubung");
+  }
+  XLSX.writeFile(wb, "cek_dokumen_kurir_" + todayISO() + ".xlsx");
+};
+
+/* ---------- Util ---------- */
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
+function log(msg, k){
+  var el = $("log");
+  el.innerHTML += '<div class="' + (k || "") + '">' + esc(msg) + "</div>";
+  el.scrollTop = el.scrollHeight;
 }
 
-function resetAll(){
-  kList=[];docs=[];results=[];
-  document.getElementById("kPrev").style.display="none";
-  document.getElementById("queue").innerHTML="";
-  document.getElementById("pgwrap").style.display="none";
-  document.getElementById("log").style.display="none";
-  document.getElementById("log").innerHTML="";
-  document.getElementById("resSec").style.display="none";
-  document.getElementById("dzK").classList.remove("loaded");
-  document.getElementById("fiK").value="";
-  document.getElementById("fiD").value="";
-  document.getElementById("sn1").className="step-num";
-  document.getElementById("sn2").className="step-num inactive";
-  document.getElementById("sn3").className="step-num inactive";
-  checkReady();
-}
+// re-evaluasi saat syarat diubah, tanpa membaca ulang dokumen
+["rqKTP","rqSIM","rqSKCK","rqIJAZAH","cfgMinAge","cfgMaxAge","cfgEdu"].forEach(function(id){
+  $(id).addEventListener("change", function(){ if (docs.length && !busy) { buildResults(); render(); } });
+});
+
+renderList(); renderQueue(); render();
+window.__kurirVersion = "1.0";
+})();
 </script>
 </body>
 </html>
